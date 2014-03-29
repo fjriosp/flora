@@ -1,3 +1,4 @@
+#include <pcm.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_LSM303_U.h>
@@ -10,9 +11,30 @@
   #define LOG(x)
 #endif
 
+// Music
+const prog_uint8_t  CUCARACHA[] PROGMEM = {
+PCM_N |PCM_8, PCM_D4|PCM_8, PCM_D4|PCM_8, PCM_D4|PCM_8, 
+PCM_F4|PCM_4, PCM_L4|PCM_8, PCM_D4|PCM_8, PCM_D4|PCM_8, PCM_D4|PCM_8,
+PCM_F4|PCM_4, PCM_L4|PCM_4, PCM_N |PCM_4,
+PCM_F4|PCM_8, PCM_F4|PCM_8, PCM_M4|PCM_8, PCM_M4|PCM_8, PCM_R4|PCM_8, PCM_R4|PCM_8,
+PCM_D4|PCM_2, PCM_N |PCM_8, PCM_D4|PCM_8, PCM_D4|PCM_8, PCM_D4|PCM_8,
+PCM_F4|PCM_4, PCM_L4|PCM_8, PCM_D4|PCM_8, PCM_D4|PCM_8, PCM_D4|PCM_8,
+PCM_F4|PCM_4, PCM_L4|PCM_4, PCM_N |PCM_4,
+PCM_R5|PCM_8, PCM_M5|PCM_8, PCM_R5|PCM_8, PCM_D5|PCM_8, PCM_s4|PCM_8, PCM_L4|PCM_8, 
+PCM_S4|PCM_4, PCM_N |PCM_2,
+PCM_N |PCM_0
+};
+
+const prog_uint8_t  SIMON[4][2] PROGMEM = {
+  {PCM_D4|PCM_4, PCM_N |PCM_0},
+  {PCM_M4|PCM_4, PCM_N |PCM_0},
+  {PCM_S4|PCM_4, PCM_N |PCM_0},
+  {PCM_s4|PCM_4, PCM_N |PCM_0}
+};
+
 // Constants
 const uint8_t RING_IO   = 12;
-const uint8_t BOTTOM_LED  = 15;
+const uint8_t BOTTOM_LED  = 0;
 const float   RAD_PIXEL = 2 * PI / 16; // distance between pixels in radians
 
 const float   FRICTION  = 0.975;
@@ -68,12 +90,13 @@ uint32_t simon_color[] = {0xFF0000,0x00FF00,0x0000FF,0xFFFF00};
 void setup(void) {
   Serial.begin(9600);
   
+  pcm_begin();
+  
   strip.begin();
   strip.setBrightness(bright);
   strip.show();
    
   accel.begin();
-  mag.begin();
   
   menu_begin();
 }
@@ -141,6 +164,8 @@ void menu_begin(void) {
   gest_left   = *bright_begin;
   gest_right  = *light_begin;
   
+  pcm_play((uint16_t)CUCARACHA);
+  
   for (int8_t i = 0; i < 16; i++) {
     strip.setPixelColor(i, 0x000000);
   }
@@ -165,6 +190,8 @@ void simon_begin(void) {
   gest_left   = *simon_left;
   gest_right  = *simon_right;
   
+  pcm_stop();
+  
   simon_seed = millis();
   simon_levl = 1;
   simon_curr = 0;
@@ -173,7 +200,7 @@ void simon_begin(void) {
   simon_clear();
   delay(250);
   for(uint8_t i=0; i<4; i++) {
-    simon_show(i);
+    simon_show(i,false);
     delay(250);
   }
   simon_clear();
@@ -204,6 +231,12 @@ void simon_clear(void) {
 }
 
 void simon_show(uint8_t v) {
+  simon_show(v,true);
+}
+
+void simon_show(uint8_t v, boolean sound) {
+  if(sound)
+    pcm_play((uint16_t)SIMON[v]);
   strip.setPixelColor(((v*4) - 1 + 16 + BOTTOM_LED) % 16, simon_color[v]);
   strip.setPixelColor(((v*4)     + 16 + BOTTOM_LED) % 16, simon_color[v]);
   strip.setPixelColor(((v*4) + 1 + 16 + BOTTOM_LED) % 16, simon_color[v]);
@@ -292,6 +325,8 @@ void light_begin(void) {
   gest_left   = NULL;
   gest_right  = NULL;
   
+  pcm_stop();
+  
   strip.setBrightness(0xFF);
   for (uint8_t i = 0; i < 16; i++)
     strip.setPixelColor(i, 0xFFFFFF);
@@ -306,6 +341,8 @@ void bright_begin(void) {
   gest_down   = *bright_sub;
   gest_left   = *bright_div;
   gest_right  = *bright_mul;
+  
+  pcm_stop();
   
   for (uint8_t i = 0; i < 16; i++) {
     if(i%4 == 0)
@@ -361,6 +398,8 @@ void ball_begin(void) {
   gest_down   = NULL;
   gest_left   = NULL;
   gest_right  = NULL;
+  
+  pcm_stop();
   
   ball_time = millis();
 }
