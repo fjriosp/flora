@@ -3,7 +3,7 @@
 boolean  pcm_loop   = 0;
 uint16_t pcm_init   = NULL;
 uint16_t pcm_next   = NULL;
-float    pcm_volume = 1.0;
+uint8_t  pcm_volume = 100;
 
 void pcm_tone(uint16_t _tone) {
   cli();
@@ -17,10 +17,10 @@ void pcm_tone(uint16_t _tone) {
   if(_tone > 0) {
     // Set tone
     OCR1A = _tone;
-    OCR1B = OCR1A * pcm_volume;
+    OCR1B = (OCR1A / 2) * (pcm_volume/100.0);
     // Enable timer1
-    TCCR1A = _BV(COM1B0);
-    TCCR1B = _BV(WGM12) | _BV(CS11);
+    TCCR1A = _BV(COM1B1) | _BV(WGM11) | _BV(WGM10);
+    TCCR1B = _BV(WGM13)  | _BV(WGM12) | _BV(CS11);
   }
   
   sei();
